@@ -1,1 +1,117 @@
+-- ============================================================
+-- 1. PRIMERO: Tablas sin dependencias (tablas padre)
+-- ============================================================
 
+CREATE TABLE `plasticos` (
+    `id` INT AUTO_INCREMENT,
+    `codigo` VARCHAR(50) NOT NULL UNIQUE,
+    `descripcion` VARCHAR(255) NOT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `perfiles` (
+    `id` INT AUTO_INCREMENT,
+    `color` VARCHAR(50) NOT NULL COMMENT 'blanco, negro, plata, oro, etc.',
+    `descripcion` TEXT,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `vidrios` (
+    `id` INT AUTO_INCREMENT,
+    `tipo` VARCHAR(100) NOT NULL,
+    `descripcion` TEXT,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 2. SEGUNDO: Tabla mamparas (depende de plasticos, perfiles, vidrios)
+-- ============================================================
+
+CREATE TABLE `mamparas` (
+    `id` INT AUTO_INCREMENT,
+    `codigo` VARCHAR(50) NOT NULL UNIQUE,
+    `nombre` VARCHAR(255) NOT NULL,
+    `tipo` VARCHAR(20) NOT NULL COMMENT 'frontal o angular',
+    `num_puertas` INT NOT NULL,
+    `num_fijos` INT NOT NULL,
+    `acristalamiento` VARCHAR(20) NOT NULL COMMENT 'vidrio o plástico',
+    `espesor_vidrio` DECIMAL(10,2) NOT NULL,
+    `plastico_id` INT DEFAULT NULL,
+    `perfil_id` INT NOT NULL,
+    `vidrio_id` INT NOT NULL,
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`plastico_id`) REFERENCES `plasticos`(`id`) ON DELETE SET NULL,
+    FOREIGN KEY (`perfil_id`) REFERENCES `perfiles`(`id`) ON DELETE RESTRICT,
+    FOREIGN KEY (`vidrio_id`) REFERENCES `vidrios`(`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 3. TERCERO: Tablas que dependen de mamparas
+-- ============================================================
+
+CREATE TABLE `precios` (
+    `id` INT AUTO_INCREMENT,
+    `mampara_id` INT NOT NULL,
+    `perfil_id` INT NOT NULL,
+    `vidrio_id` INT NOT NULL,
+    `plastico_id` INT DEFAULT NULL,
+    `precio_base` DECIMAL(10,2) NOT NULL,
+    `precio_final` DECIMAL(10,2) NOT NULL,
+    `fecha` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`mampara_id`) REFERENCES `mamparas`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`perfil_id`) REFERENCES `perfiles`(`id`) ON DELETE RESTRICT,
+    FOREIGN KEY (`vidrio_id`) REFERENCES `vidrios`(`id`) ON DELETE RESTRICT,
+    FOREIGN KEY (`plastico_id`) REFERENCES `plasticos`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `medidas` (
+    `id` INT AUTO_INCREMENT,
+    `codigo_articulo` VARCHAR(50) NOT NULL COMMENT 'referencia a mamparas.codigo',
+    `medida` VARCHAR(50) NOT NULL COMMENT 'ej: 120x200 cm',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `despiece` (
+    `id` INT AUTO_INCREMENT,
+    `mampara_id` INT NOT NULL,
+    `vidrio_id` INT DEFAULT NULL,
+    `puertas` TEXT,
+    `fijos` TEXT,
+    `angulares` TEXT,
+    `tirador` TEXT,
+    `cerco_cierre` TEXT,
+    `cerco_horizontal` TEXT,
+    `cerco_vertical` TEXT,
+    `compensador` TEXT,
+    `vierteaguas` TEXT,
+    `tapas` TEXT,
+    `goma_iman` TEXT,
+    `goma_cierre` TEXT,
+    `rodamientos` TEXT,
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`mampara_id`) REFERENCES `mamparas`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`vidrio_id`) REFERENCES `vidrios`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `componentes` (
+    `id` INT AUTO_INCREMENT,
+    `codigo` VARCHAR(50) NOT NULL UNIQUE,
+    `tipo_pieza` VARCHAR(50) NOT NULL COMMENT 'ej: tirador, cerco, goma, rodamiento',
+    `descripcion` VARCHAR(255) NOT NULL,
+    `coste` DECIMAL(10,2) NOT NULL,
+    `dimension` VARCHAR(50) NOT NULL COMMENT 'metro lineal / metro cuadrado / unidad',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 4. CUARTO: Índices para optimizar consultas
+-- ============================================================
+
+CREATE INDEX `idx_mampara_codigo` ON `mamparas` (`codigo`);
+CREATE INDEX `idx_mampara_nombre` ON `mamparas` (`nombre`);
+CREATE INDEX `idx_perfil_color` ON `perfiles` (`color`);
+CREATE INDEX `idx_vidrio_tipo` ON `vidrios` (`tipo`);
+CREATE INDEX `idx_precio_fecha` ON `precios` (`fecha`);
+CREATE INDEX `idx_componentes_codigo` ON `componentes` (`codigo`);
+CREATE INDEX `idx_medida_codigo` ON `medidas` (`codigo_articulo`);
